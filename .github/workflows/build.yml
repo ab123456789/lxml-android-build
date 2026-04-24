@@ -13,16 +13,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout lxml source
+        uses: actions/checkout@v4
         with:
           repository: 'lxml/lxml'
           ref: 'lxml-6.1.0'
+          path: 'lxml_src'
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.17.0
+        with:
+          package-dir: 'lxml_src'
         env:
           CIBW_BEFORE_ALL: "apt-get update && apt-get install -y libxml2-dev libxslt1-dev"
           CIBW_BUILD: cp313-manylinux_aarch64
@@ -32,4 +36,5 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
+          name: lxml-wheels
           path: ./wheelhouse/*.whl
