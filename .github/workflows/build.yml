@@ -1,14 +1,11 @@
 
-name: Build lxml for Android
+name: Manual lxml Build for Android
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:
-  build_wheels:
+  build:
     name: Build lxml cp313-manylinux_aarch64
     runs-on: ubuntu-latest
 
@@ -18,23 +15,26 @@ jobs:
         with:
           repository: 'lxml/lxml'
           ref: 'lxml-6.1.0'
-          path: 'lxml_src'
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
-      - name: Build wheels
-        uses: pypa/cibuildwheel@v2.17.0
-        with:
-          package-dir: 'lxml_src'
-        env:
-          CIBW_BEFORE_ALL: "apt-get update && apt-get install -y libxml2-dev libxslt1-dev"
-          CIBW_BUILD: cp313-manylinux_aarch64
-          CIBW_ARCHS_LINUX: aarch64
-          CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxml2-dev libxslt1-dev python3.11-dev
+
+      - name: Set up cross-compilation environment
+        run: |
+          echo "CC=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=/usr/aarch64-linux-gnu/lib" >> $GITHUB_ENV
+
+      - name: Build the wheel
+        run: |
+          python3.11 setup.py bdist_wheel --plat-name manylinux_2_28_aarch64 --python-tag cp313
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: lxml-wheels
-          path: ./wheelhouse/*.whl
+          name: lxml-wheel
+          path: dist/*.whl
