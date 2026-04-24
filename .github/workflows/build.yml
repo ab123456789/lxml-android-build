@@ -9,39 +9,27 @@ on:
 
 jobs:
   build_wheels:
-    name: Build wheels on ubuntu-latest
+    name: Build lxml cp313-manylinux_aarch64
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          repository: 'lxml/lxml'
+          ref: 'lxml-6.1.0'
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install cibuildwheel
-        run: python -m pip install cibuildwheel==2.17.0
-
-      - name: Download and extract source
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release download v1.0.0 --pattern '*.tar.gz' --repo "$GITHUB_REPOSITORY"
-          tar -xvf lxml_source.tar.gz --strip-components=1
-
       - name: Build wheels
-        run: python -m cibuildwheel --output-dir wheelhouse
+        uses: pypa/cibuildwheel@v2.17.0
         env:
+          CIBW_BEFORE_ALL: "apt-get update && apt-get install -y libxml2-dev libxslt1-dev"
+          CIBW_BUILD: cp313-manylinux_aarch64
           CIBW_ARCHS_LINUX: aarch64
-          CIBW_BUILD: "cp313-*"
-          CIBW_MANYLINUX_AARCH64_IMAGE: manylinux2014
+          CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: lxml-wheels
           path: ./wheelhouse/*.whl
